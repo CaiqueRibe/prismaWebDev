@@ -1,0 +1,70 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// models are composed of fields
+// fields are composed of 4 differentes columns
+// name, type, modifier?, attributes? (start with @)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  // id          Int     @id @default(autoincrement())
+  id               String          @id @default(uuid()) // uuid are safes since they are unique in nature
+  age              Int
+  name             String
+  email            String          @unique
+  // isAdmin         Boolean
+  role             Role            @default(BASIC) // enum
+  // preferences     Json // not all databases support json // sqlite does not support json // postgresql does
+  // blob Bytes 
+  // blob Unsupported("") // converting existin database to primsa
+  writtenPosts     Post[]          @relation("WrittenPosts") // array moddifier // option modifier (only two types)
+  favoritePosts    Post[]          @relation("FavoritePosts")
+  userPreference   UserPreference? @relation(fields: [userPreferenceId], references: [id])
+  userPreferenceId String?         @unique
+
+  @@unique([age, name]) // two users cant have the same age and name
+  @@index([email]) // query or sort by email index
+}
+
+model UserPreference {
+  id           String  @id @default(uuid())
+  emailUpdates Boolean
+  user         User?
+}
+
+model Post {
+  id            String     @id @default(uuid()) // uuid are safes since they are unique in nature
+  title         String
+  averageRating Float
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  author        User       @relation("WrittenPosts", fields: [authorId], references: [id]) //FK relatinship
+  authorId      String
+  favoriteBy    User?      @relation("FavoritePosts", fields: [favoriteByid], references: [id]) //FK relatinship
+  favoriteByid  String?
+  categories    Category[] // many to many relationship // join table
+
+  // @@id([title, authorId]) // composite id // title and authorId are unique together 
+}
+
+model Category {
+  id    String @id @default(uuid())
+  name  String @unique
+  posts Post[]
+}
+
+// field vs block level attributes
+
+enum Role {
+  BASIC
+  EDITOR
+  ADMIN
+}
